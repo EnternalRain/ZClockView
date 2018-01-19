@@ -1,19 +1,15 @@
 package com.example.zhy.zclockview;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.util.AttributeSet;
-import android.util.Log;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
 
-import java.lang.ref.WeakReference;
 import java.util.Calendar;
 
 /**
@@ -40,6 +36,8 @@ public class ClockView extends View {
     private Calendar mCalender;
     
     private RefreshTask mRefreshTask;
+    
+    private Bitmap mClockBg;
     
     public ClockView(Context context) {
         this(context, null);
@@ -70,7 +68,7 @@ public class ClockView extends View {
         super.onDraw(canvas);
         initTime(System.currentTimeMillis());
         refreshUI(canvas);
-        postDelayed(mRefreshTask, 16);
+        postDelayed(mRefreshTask, 14);
     }
     
     private class RefreshTask implements Runnable {
@@ -85,16 +83,12 @@ public class ClockView extends View {
      * 刷新ui
      */
     private void refreshUI(Canvas canvas) {
-        long startTime = System.currentTimeMillis();
-        canvas.drawColor(mBgColor);
-        drawValueLine(canvas);
-        drawValue(canvas);
-        drawOutScale(canvas, mSecond, mMilliSceond);
+        canvas.drawBitmap(mClockBg, 0, 0, null);
+        canvas.translate(300, 300);
+        drawNowScale(canvas, mSecond, mMilliSceond);
         drawSecond(canvas, mSecond, mMilliSceond);
-        drawInCircle(canvas);
         drawHour(canvas, mHour, mMinute, mSecond);
         drawMinute(canvas, mMinute, mSecond);
-        Log.d("ClockView", "refreshUI-> 耗时：" + (System.currentTimeMillis() - startTime));
     }
     
     private void init() {
@@ -109,6 +103,14 @@ public class ClockView extends View {
         
         initTime(System.currentTimeMillis());
         mRefreshTask = new RefreshTask();
+        
+        mClockBg = Bitmap.createBitmap(600, 600, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(mClockBg);
+        canvas.drawColor(mBgColor);
+        drawValueLine(canvas);
+        drawValue(canvas);
+        drawInCircle(canvas);
+        drawOutScale(canvas);
     }
     
     /**
@@ -190,12 +192,32 @@ public class ClockView extends View {
      * 画最外围的刻度
      *
      * @param canvas      画布
+     */
+    private void drawOutScale(Canvas canvas) {
+        mPaint.setStrokeWidth(1);
+        mPaint.setStyle(Paint.Style.STROKE);
+        mPaint.setColor(mWaitScanScaleColor);
+        mPath.reset();
+        mPath.moveTo(0, -200);
+        mPath.lineTo(0, -220);
+        mPath.close();
+        for (int i = 0; i < 300; i++) {
+            canvas.drawPath(mPath, mPaint);
+            canvas.rotate(1.2f);
+        }
+    }
+    
+    /**
+     * 画最外围的刻度
+     *
+     * @param canvas      画布
      * @param second      秒数
      * @param milliSecond 毫秒
      */
-    private void drawOutScale(Canvas canvas, int second, int milliSecond) {
+    private void drawNowScale(Canvas canvas, int second, int milliSecond) {
         mPaint.setStrokeWidth(1);
         mPaint.setStyle(Paint.Style.STROKE);
+        mPaint.setColor(mWaitScanScaleColor);
         mPath.reset();
         mPath.moveTo(0, -200);
         mPath.lineTo(0, -220);
@@ -203,10 +225,8 @@ public class ClockView extends View {
         for (int i = 0; i < 300; i++) {
             if (isCurScaning(i, second, milliSecond)) {
                 mPaint.setColor(mIsScaningScaleColor);
-            } else {
-                mPaint.setColor(mWaitScanScaleColor);
+                canvas.drawPath(mPath, mPaint);
             }
-            canvas.drawPath(mPath, mPaint);
             canvas.rotate(1.2f);
         }
     }
